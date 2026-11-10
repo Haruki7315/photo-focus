@@ -1,0 +1,23 @@
+/* Clock faces (ported from the prototype). Sizes are in em, so the Size slider scales everything. */
+.face { display: flex; flex-direction: column; align-items: inherit; }
+.face .t-main, .face .flip, .face .fsep { font-family: var(--cf); font-weight: var(--cw); letter-spacing: var(--cls); }
+.t-main { line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Flip */
+.flip { display: flex; align-items: center; gap: .05em; }
+.fc { position: relative; width: .72em; height: 1.04em; perspective: 3em; }
+.fc-h { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; background: var(--cardbg); color: var(--cardfg); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.fc-t { top: 0; border-radius: .08em .08em 0 0; }
+.fc-b { bottom: 0; border-radius: 0 0 .08em .08em; }
+.fc-h b { display: block; font-weight: inherit; font-size: .84em; height: 1.2381em; line-height: 1.2381em; text-align: center; }
+.fc-b b { margin-top: -.619em; }
+.fc::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(1px, .014em); background: rgba(0,0,0,.5); z-index: 3; }
+.fc-flap-t { transform-origin: bottom; animation: flapT .2s ease-in forwards; z-index: 2; }
+.fc-flap-b { transform-origin: top; transform: rotateX(90deg); animation: flapB .2s .2s ease-out forwards; z-index: 2; }
+@keyframes flapT { to { transform: rotateX(-90deg); } }
+@keyframes flapB { to { transform: rotateX(0deg); } }
+.fsep { width: .2em; text-align: center; line-height: 1; font-size: .8em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fc-flap-t, .fc-flap-b { animation: none; }
+}

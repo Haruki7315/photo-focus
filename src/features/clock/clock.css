@@ -1,0 +1,28 @@
+/* Clock overlay placement and look (ported from the prototype). 1 size step = 1.44% of the shorter screen side. */
+.overlay {
+  position: absolute; display: flex; flex-direction: column; gap: .08em; color: var(--cc, #fff);
+  opacity: var(--op, .9); pointer-events: none; font-size: calc(var(--ts, 9) * 1.44cqmin);
+  --tx: 0px; --ty: 0px;
+  /* --bx/--by: the small burn-in shift every 3 minutes. */
+  transform: translate(calc(var(--tx) + var(--bx, 0px)), calc(var(--ty) + var(--by, 0px)));
+  transition: transform 2s ease;
+}
+/* Keep clear of the notch, status bar and home indicator. */
+.p-t { top: max(5cqh, calc(env(safe-area-inset-top) + 8px)); }
+.p-m { top: 50%; --ty: -50%; }
+.p-b { bottom: max(5cqh, calc(env(safe-area-inset-bottom) + 8px)); }
+.p-l { left: max(5cqw, calc(env(safe-area-inset-left) + 8px)); align-items: flex-start; text-align: left; }
+.p-c { left: 50%; --tx: -50%; align-items: center; text-align: center; }
+.p-r { right: max(5cqw, calc(env(safe-area-inset-right) + 8px)); align-items: flex-end; text-align: right; }
+
+.bd-glass { background: var(--glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); padding: .16em .3em .2em; border-radius: .16em; }
+.bd-shadow .t-main, .bd-shadow .t-sub, .bd-shadow .fsep { text-shadow: 0 .02em .16em var(--shadowc); }
+.bd-shadow .flip, .bd-shadow .t-bar { filter: drop-shadow(0 .02em .1em var(--shadowc)); }
+
+.overlay .t-sub { font-family: var(--font-label); font-size: max(9px, .15em); letter-spacing: .14em; text-transform: uppercase; opacity: .85; white-space: nowrap; }
+.overlay .t-bar { width: 100%; min-width: 3.5em; height: max(2px, .035em); background: color-mix(in srgb, currentColor 25%, transparent); border-radius: 2px; overflow: hidden; margin-top: .06em; }
+.overlay .t-bar > i { display: block; height: 100%; background: currentColor; transition: width .25s linear; }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .overlay .t-bar > i { transition: none; }
+}

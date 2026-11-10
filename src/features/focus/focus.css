@@ -28,20 +28,9 @@
   color: rgba(255,255,255,.9); font-family: var(--font-label); font-size: max(10px, 1.7cqmin); letter-spacing: .04em;
   text-shadow: 0 1px 6px rgba(0,0,0,.6); display: flex; flex-direction: column; gap: .2em; max-width: 50%; pointer-events: none;
 }
+.caption.top { bottom: auto; top: max(3cqh, calc(env(safe-area-inset-top) + 8px)); }
 .caption.ink { color: rgba(20,22,26,.85); text-shadow: none; }
 .caption b { font-family: var(--font-ui); font-weight: 500; font-size: 1.25em; letter-spacing: 0; }
-
-/* ---- Timer (simple for now; clock faces come in milestone 4) ---- */
-.timer-overlay {
-  position: absolute; right: max(4cqw, env(safe-area-inset-right)); bottom: max(4cqh, env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; align-items: flex-end; gap: .08em;
-  color: #fff; opacity: .9; pointer-events: none; font-size: 13cqmin;
-  text-shadow: 0 .02em .12em rgba(0,0,0,.55);
-}
-.t-sub { font-family: var(--font-label); font-size: max(11px, .14em); letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
-.t-time { font-family: var(--font-label); font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.t-bar { width: 100%; min-width: 3.5em; height: max(2px, .035em); background: rgba(255,255,255,.25); border-radius: 2px; overflow: hidden; margin-top: .06em; }
-.t-bar > i { display: block; height: 100%; background: currentColor; transition: width .25s linear; }
 
 /* ---- Control bar ---- */
 .controls {
@@ -122,6 +111,6 @@
 .thumbs .heart .icon { width: 16px; height: 16px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
 
 @media (prefers-reduced-motion: reduce) {
-  .photo-layer .layer, .controls, .nightveil, .t-bar > i { transition: none; }
+  .photo-layer .layer, .controls, .nightveil { transition: none; }
   .sheet { animation: none; }
 }

@@ -29,3 +29,15 @@ select, input[type="text"] { font: inherit; font-size: 14px; padding: 7px 10px; 
 .btn.danger { color: #ff8a73; border-color: #6b3a32; }
 .btn:disabled { opacity: .5; cursor: default; }
 .icon { width: 22px; height: 22px; flex: none; }
+
+.posgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 132px; aspect-ratio: 1.44; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); flex: none; }
+.posgrid button { border: 0; border-radius: 6px; background: transparent; cursor: pointer; display: grid; place-items: center; min-height: 22px; }
+.posgrid button::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--line); }
+.posgrid button[aria-pressed="true"]::after { background: var(--accent); width: 13px; height: 13px; }
+.poswrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+
+.faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+.faces button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 2px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); font: inherit; font-size: 12px; cursor: pointer; }
+.faces button svg { width: 26px; height: 26px; }
+.faces button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+input[type="text"] { width: 100%; }

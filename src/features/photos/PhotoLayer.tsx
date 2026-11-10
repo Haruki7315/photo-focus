@@ -32,7 +32,7 @@ function preload(url: string): Promise<void> {
  * The photo, its blurred background, mat, caption and night veil.
  * When the photo changes it fades out, loads the next one, then fades in.
  */
-export function PhotoLayer({ photo, look }: { photo: PhotoMeta | null; look: LookSettings }) {
+export function PhotoLayer({ photo, look, captionTop = false }: { photo: PhotoMeta | null; look: LookSettings; captionTop?: boolean }) {
   const [shown, setShown] = useState<{ url: string; photo: PhotoMeta } | null>(null)
   const [fading, setFading] = useState(false)
   const hasShown = useRef(false)
@@ -80,7 +80,7 @@ export function PhotoLayer({ photo, look }: { photo: PhotoMeta | null; look: Loo
       {shown && <img className="layer photo" src={shown.url} alt={meta?.title ?? 'Photo'} draggable={false} />}
       <div className="nightveil" />
       {meta && look.showCaption && look.showPhoto && (
-        <div className={`caption${captionNeedsDarkText(look) ? ' ink' : ''}`}>
+        <div className={`caption${captionNeedsDarkText(look) ? ' ink' : ''}${captionTop ? ' top' : ''}`}>
           <b>{meta.title || 'Untitled'}</b>
           <span>{formatExifLine(meta.exif) ?? 'No camera info in this file'}</span>
         </div>

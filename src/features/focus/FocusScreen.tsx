@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { formatDuration } from '../../core/format'
+import { captionAtTop, normalizeClock, type ClockSettings } from '../../core/clock'
 import { normalizeLook, type LookSettings } from '../../core/look'
 import { changesPhotoOn, normalizePhotoChange, type PhotoChangeSettings } from '../../core/photos'
-import type { Phase, TimerEvent, TimerSettings } from '../../core/timer'
+import type { TimerEvent, TimerSettings } from '../../core/timer'
 import { Icon } from '../../ui/Icon'
 import { AddPhotosButton, describeImport } from '../photos/AddPhotosButton'
 import { PhotoLayer } from '../photos/PhotoLayer'
@@ -11,16 +11,17 @@ import { saveSetting, type AppSettings } from '../settings/appSettings'
 import { LookPanel } from '../settings/LookPanel'
 import { PhotosPanel } from '../settings/PhotosPanel'
 import { SettingsSheet } from '../settings/SettingsSheet'
-import { TimerPanel } from '../settings/TimerPanel'
+import { ClockOverlay } from '../clock/ClockOverlay'
+import { ClockPanel } from '../settings/ClockPanel'
 import { useTimer } from '../timer/useTimer'
 
 const CONTROLS_HIDE_MS = 4000
-const PHASE_LABEL: Record<Phase, string> = { focus: 'Focus', break: 'Break', longBreak: 'Long break' }
 
 /** The main screen: full-screen photo, timer, and a control bar that appears on tap. */
 export function FocusScreen({ initial }: { initial: AppSettings }) {
   const library = usePhotoLibrary()
   const [look, setLookState] = useState<LookSettings>(initial.look)
+  const [clock, setClockState] = useState<ClockSettings>(initial.clock)
   const [photoChange, setPhotoChangeState] = useState<PhotoChangeSettings>(initial.photoChange)
   const [welcomeDone, setWelcomeDone] = useState(initial.welcomeDone)
   const [controls, setControls] = useState(false)
@@ -47,14 +48,16 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   const setPhotoChange = (patch: Partial<PhotoChangeSettings>) =>
     setPhotoChangeState((prev) => normalizePhotoChange({ ...prev, ...patch }))
   const setTimerSettings = (patch: Partial<TimerSettings>) => saveSetting('timer', timer.setSettings(patch))
+  const setClock = (patch: Partial<ClockSettings>) => setClockState((prev) => normalizeClock({ ...prev, ...patch }))
   useEffect(() => saveSetting('look', look), [look])
+  useEffect(() => saveSetting('clock', clock), [clock])
   useEffect(() => saveSetting('photoChange', photoChange), [photoChange])
   const finishWelcome = () => {
     setWelcomeDone(true)
     saveSetting('welcomeDone', true)
   }
 
-  // "Every few min": count timer time while running, then change the photo.
+  // "Every few min": count time (timer time while running, or real time in Clock mode), then change the photo.
   const sinceChange = useRef(0)
   const lastNow = useRef(timer.now)
   const currentId = library.current?.id
@@ -64,13 +67,14 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   useEffect(() => {
     const dt = timer.now - lastNow.current
     lastNow.current = timer.now
-    if (!view.running || photoChange.mode !== 'every') return
-    sinceChange.current += dt * timer.settings.speed
+    const clockMode = clock.mode === 'clock'
+    if ((!view.running && !clockMode) || photoChange.mode !== 'every') return
+    sinceChange.current += clockMode ? dt : dt * timer.settings.speed
     if (sinceChange.current >= photoChange.everyMinutes * 60_000) {
       sinceChange.current = 0
       next()
     }
-  }, [timer.now, view.running, photoChange, timer.settings.speed, next])
+  }, [timer.now, view.running, photoChange, timer.settings.speed, next, clock.mode])
 
   // Control bar: show on tap, hide again after 4 seconds without touches.
   const hideTimer = useRef(0)
@@ -105,20 +109,15 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
         poke()
       }}
     >
-      <PhotoLayer photo={current} look={look} />
+      <PhotoLayer photo={current} look={look} captionTop={captionAtTop(clock.position)} />
 
-      <div className="timer-overlay" aria-live="off">
-        <div className="t-sub">
-          {PHASE_LABEL[view.phase]}
-          {view.completedSessions > 0 && ` · ${view.completedSessions} done`}
-        </div>
-        <div className="t-time">{formatDuration(Math.ceil(view.remainingMs / 1000))}</div>
-        <div className="t-bar"><i style={{ width: `${view.progress * 100}%` }} /></div>
-      </div>
+      <ClockOverlay settings={clock} timer={view} now={timer.now} night={look.night} />
 
       {message && !settingsOpen && <div className="toast" aria-live="polite">{message}</div>}
 
       <nav className={`controls${controls && !settingsOpen ? ' on' : ''}`} aria-label="Controls" onClick={(e) => e.stopPropagation()}>
+        {clock.mode === 'focus' && (
+          <>
         <button type="button" className="ctl primary" onClick={act(timer.toggle)} aria-label={view.running ? 'Pause' : 'Start'}>
           <Icon name={view.running ? 'pause' : 'play'} />
           <span>{view.running ? 'Pause' : 'Start'}</span>
@@ -127,6 +126,8 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
           <Icon name="skip" />
           <span>Skip</span>
         </button>
+          </>
+        )}
         <button type="button" className="ctl" onClick={act(library.next)} aria-label="Next photo">
           <Icon name="next" />
           <span>Next</span>
@@ -188,7 +189,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
             ) : tab === 'look' ? (
               <LookPanel look={look} onChange={setLook} />
             ) : (
-              <TimerPanel settings={timer.settings} onChange={setTimerSettings} />
+              <ClockPanel clock={clock} onClock={setClock} timer={timer.settings} onTimer={setTimerSettings} />
             )
           }
         />
