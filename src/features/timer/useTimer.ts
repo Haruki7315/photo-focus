@@ -51,11 +51,16 @@ export function useTimer(initial: TimerSettings, onEvent?: (e: TimerEvent) => vo
   }, [apply])
 
   return {
+    now,
     view: getView(state, now),
     settings: state.settings,
     toggle: () => apply((s, t) => ({ state: toggleTimer(s, t), events: [] })),
     skip: () => apply(skipTimer),
     reset: () => apply((s) => ({ state: resetTimer(s), events: [] })),
-    setSettings: (next: TimerSettings) => apply((s, t) => ({ state: updateSettings(s, next, t), events: [] })),
+    /** Change some settings; the rest keep their latest values. Returns the new settings. */
+    setSettings: (patch: Partial<TimerSettings>) => {
+      apply((s, t) => ({ state: updateSettings(s, { ...s.settings, ...patch }, t), events: [] }))
+      return stateRef.current.settings
+    },
   }
 }

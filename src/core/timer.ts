@@ -212,3 +212,8 @@ export function getView(state: TimerState, now: number): TimerView {
     completedSessions: state.completedSessions,
   }
 }
+
+/** Fill in missing or broken values from saved settings. */
+export function normalizeTimerSettings(saved: Partial<TimerSettings> | null | undefined): TimerSettings {
+  return validate({ ...DEFAULT_SETTINGS, ...(saved ?? {}), longBreakEnabled: saved?.longBreakEnabled !== false })
+}

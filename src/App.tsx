@@ -1,12 +1,12 @@
-import { TimerTestPanel } from './features/timer/TimerTestPanel'
+import { useEffect, useState } from 'react'
+import { FocusScreen } from './features/focus/FocusScreen'
+import { loadAppSettings, type AppSettings } from './features/settings/appSettings'
 
-/** Milestone 2: timer engine test screen. */
+/** Loads saved settings, then shows the focus screen. */
 export function App() {
-  return (
-    <main className="hello">
-      <h1>Photo Focus</h1>
-      <TimerTestPanel />
-      <p className="hello-version">Version {__APP_VERSION__}</p>
-    </main>
-  )
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  useEffect(() => {
+    loadAppSettings().then(setSettings)
+  }, [])
+  return settings ? <FocusScreen initial={settings} /> : <div className="boot" />
 }

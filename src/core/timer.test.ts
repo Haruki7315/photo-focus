@@ -239,3 +239,12 @@ describe('timer: settings and reset', () => {
     expect(v.completedSessions).toBe(0)
   })
 })
+
+describe('timer: saved settings', () => {
+  it('fills in missing values', async () => {
+    const { normalizeTimerSettings } = await import('./timer')
+    expect(normalizeTimerSettings(null)).toEqual(DEFAULT_SETTINGS)
+    expect(normalizeTimerSettings({ focusMinutes: 50 })).toEqual({ ...DEFAULT_SETTINGS, focusMinutes: 50 })
+    expect(normalizeTimerSettings({ longBreakEnabled: false }).longBreakEnabled).toBe(false)
+  })
+})

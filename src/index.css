@@ -1,7 +1,9 @@
 :root {
   --bg: #111317;
+  --panel: #191c21;
   --fg: #e6e8ed;
   --muted: #9aa0ac;
+  --line: #2a2f37;
   --accent: #e1a556;
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --font-label: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -13,55 +15,14 @@
 html, body, #root { height: 100%; margin: 0; }
 
 body {
-  background: var(--bg);
+  background: #000;
   color: var(--fg);
   font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  /* Keep content clear of the notch and home indicator. */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
-.hello {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px 16px;
-  text-align: center;
-}
-
-.hello-time {
-  margin: 0;
-  font-family: var(--font-label);
-  font-size: clamp(64px, 18vmin, 180px);
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--accent);
-  line-height: 1;
-}
-
-.hello h1 { margin: 16px 0 0; font-size: 24px; font-weight: 600; }
-.hello-sub { margin: 0; color: var(--muted); }
-.hello-version { margin: 24px 0 0; font-family: var(--font-label); font-size: 12px; color: var(--muted); }
-
-/* Milestone 2 timer test screen */
-.timer { width: min(100%, 420px); display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 12px; }
-.timer-phase { margin: 0; color: var(--muted); font-family: var(--font-label); font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; }
-.timer-time { margin: 0; font-family: var(--font-label); font-size: clamp(64px, 18vmin, 160px); font-weight: 500; font-variant-numeric: tabular-nums; color: var(--accent); line-height: 1; }
-.timer-bar { width: 100%; height: 4px; border-radius: 2px; background: #2a2f37; overflow: hidden; }
-.timer-bar > div { height: 100%; background: var(--accent); }
-.timer-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-.timer button, .timer select {
-  font: inherit; color: var(--fg); background: #191c21; border: 1px solid #2a2f37; border-radius: 10px;
-  padding: 10px 16px; min-height: 44px; /* big enough to tap */
-}
-.timer button.primary { background: var(--accent); color: #111317; border-color: var(--accent); font-weight: 600; min-width: 100px; }
-.timer select { padding: 6px 10px; margin-left: 6px; }
-.timer-settings { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 18px; font-size: 14px; }
-.timer-settings label { display: flex; align-items: center; }
-.timer-settings .check { gap: 6px; }
-.timer-settings input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
-.timer-log { list-style: none; margin: 0; padding: 0; font-family: var(--font-label); font-size: 12px; color: var(--muted); min-height: 7em; }
+.boot { position: fixed; inset: 0; background: #000; }
