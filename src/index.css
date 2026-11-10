@@ -1,0 +1,48 @@
+:root {
+  --bg: #111317;
+  --fg: #e6e8ed;
+  --muted: #9aa0ac;
+  --accent: #e1a556;
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-label: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  /* Keep content clear of the notch and home indicator. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.hello {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.hello-time {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: clamp(64px, 18vmin, 180px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.hello h1 { margin: 16px 0 0; font-size: 24px; font-weight: 600; }
+.hello-sub { margin: 0; color: var(--muted); }
+.hello-version { margin: 24px 0 0; font-family: var(--font-label); font-size: 12px; color: var(--muted); }
