@@ -1,4 +1,5 @@
 /** Look settings (how the photo is shown). Pure TypeScript, no DOM. */
+import type { RevealMode, TileCover, TileOrder } from './reveal'
 
 export type PhotoFit = 'contain' | 'cover'
 
@@ -12,6 +13,10 @@ export interface LookSettings {
   showPhoto: boolean
   showCaption: boolean
   night: boolean
+  /** Photo reveal: none, puzzle pieces, or develop (black-and-white to color). */
+  reveal: RevealMode
+  revealOrder: TileOrder
+  revealCover: TileCover
 }
 
 export const DEFAULT_LOOK: LookSettings = {
@@ -21,6 +26,9 @@ export const DEFAULT_LOOK: LookSettings = {
   showPhoto: true,
   showCaption: false,
   night: false,
+  reveal: 'none',
+  revealOrder: 'random',
+  revealCover: 'frost',
 }
 
 export const MAT_MAX = 14
@@ -70,5 +78,8 @@ export function normalizeLook(saved: Partial<LookSettings> | null | undefined): 
     showPhoto: s.showPhoto !== false,
     showCaption: s.showCaption === true,
     night: s.night === true,
+    reveal: s.reveal === 'tiles' || s.reveal === 'develop' ? s.reveal : 'none',
+    revealOrder: s.revealOrder === 'seq' || s.revealOrder === 'spiral' ? s.revealOrder : 'random',
+    revealCover: s.revealCover === 'solid' ? 'solid' : 'frost',
   }
 }

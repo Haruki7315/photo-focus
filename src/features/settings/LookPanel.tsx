@@ -5,8 +5,16 @@ import { Swatches } from '../../ui/Swatches'
 
 const BLUR_CHIP = { background: 'radial-gradient(circle at 30% 30%, #f0a95a, #3b2b3a 70%)' }
 
+const REVEAL_NOTES = {
+  none: 'The photo is shown in full the whole time.',
+  tiles:
+    'The photo is split into one piece per minute (25 pieces for 25 min). Each piece slowly fades from dim to clear during its minute, and the picture is complete when the session ends. Clock mode: 60 pieces per hour.',
+  develop: 'The photo starts black-and-white and slowly turns to full color as you focus. Clock mode: develops once per hour.',
+} as const
+
 export function LookPanel({ look, onChange }: { look: LookSettings; onChange: (patch: Partial<LookSettings>) => void }) {
   return (
+    <>
     <Group title="Screen">
       <Row label="Photo fit">
         <Segmented
@@ -44,5 +52,47 @@ export function LookPanel({ look, onChange }: { look: LookSettings; onChange: (p
         <Check label="Night mode" checked={look.night} onChange={(night) => onChange({ night })} />
       </div>
     </Group>
+
+    <Group title="Photo reveal">
+      <Segmented
+        label="Photo reveal"
+        options={[
+          { value: 'none', label: 'None' },
+          { value: 'tiles', label: 'Puzzle pieces' },
+          { value: 'develop', label: 'Develop' },
+        ]}
+        value={look.reveal}
+        onChange={(reveal) => onChange({ reveal })}
+      />
+      {look.reveal === 'tiles' && (
+        <>
+          <Row label="Piece order">
+            <Segmented
+              label="Piece order"
+              options={[
+                { value: 'random', label: 'Random' },
+                { value: 'seq', label: 'In order' },
+                { value: 'spiral', label: 'From center' },
+              ]}
+              value={look.revealOrder}
+              onChange={(revealOrder) => onChange({ revealOrder })}
+            />
+          </Row>
+          <Row label="Hidden pieces look">
+            <Segmented
+              label="Hidden pieces look"
+              options={[
+                { value: 'frost', label: 'Frosted' },
+                { value: 'solid', label: 'Solid color' },
+              ]}
+              value={look.revealCover}
+              onChange={(revealCover) => onChange({ revealCover })}
+            />
+          </Row>
+        </>
+      )}
+      <p className="note">{REVEAL_NOTES[look.reveal]}</p>
+    </Group>
+    </>
   )
 }

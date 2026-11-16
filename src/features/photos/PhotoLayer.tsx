@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { captionNeedsDarkText, type LookSettings } from '../../core/look'
 import { formatExifLine, type PhotoMeta } from '../../core/photos'
 import { getDisplayUrl } from './photoUrls'
+import { RevealTiles, type TileReveal } from './RevealTiles'
 
 const FADE_MS = 380
 
@@ -32,7 +33,22 @@ function preload(url: string): Promise<void> {
  * The photo, its blurred background, mat, caption and night veil.
  * When the photo changes it fades out, loads the next one, then fades in.
  */
-export function PhotoLayer({ photo, look, captionTop = false }: { photo: PhotoMeta | null; look: LookSettings; captionTop?: boolean }) {
+export function PhotoLayer({
+  photo,
+  look,
+  captionTop = false,
+  tiles = null,
+  grayscale = 0,
+}: {
+  photo: PhotoMeta | null
+  look: LookSettings
+  captionTop?: boolean
+  /** Puzzle pieces to draw over the photo, or null for none. */
+  tiles?: TileReveal | null
+  /** Develop effect: 1 = black-and-white, 0 = full color. */
+  grayscale?: number
+}) {
+  const imgRef = useRef<HTMLImageElement>(null)
   const [shown, setShown] = useState<{ url: string; photo: PhotoMeta } | null>(null)
   const [fading, setFading] = useState(false)
   const hasShown = useRef(false)
@@ -74,10 +90,21 @@ export function PhotoLayer({ photo, look, captionTop = false }: { photo: PhotoMe
   return (
     <div
       className={classes.filter(Boolean).join(' ')}
-      style={{ backgroundColor: blur ? '#000' : look.background, ['--mat' as string]: `${look.mat}cqmin` }}
+      style={{ backgroundColor: blur ? '#000' : look.background, ['--mat' as string]: `${look.mat}cqmin`, ['--gs' as string]: grayscale.toFixed(3) }}
     >
       {shown && <img className="layer blurbg" src={shown.url} alt="" draggable={false} />}
-      {shown && <img className="layer photo" src={shown.url} alt={meta?.title ?? 'Photo'} draggable={false} />}
+      {shown && <img ref={imgRef} className="layer photo" src={shown.url} alt={meta?.title ?? 'Photo'} draggable={false} />}
+      {shown && tiles && !fading && (
+        <RevealTiles
+          key={shown.photo.id}
+          imgRef={imgRef}
+          photoId={shown.photo.id}
+          natural={{ w: shown.photo.width, h: shown.photo.height }}
+          fit={look.showPhoto ? look.fit : 'cover'}
+          reveal={tiles}
+          solidColor={blur ? '#15181d' : look.background}
+        />
+      )}
       <div className="nightveil" />
       {meta && look.showCaption && look.showPhoto && (
         <div className={`caption${captionNeedsDarkText(look) ? ' ink' : ''}${captionTop ? ' top' : ''}`}>

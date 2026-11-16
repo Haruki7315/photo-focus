@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { captionAtTop, normalizeClock, type ClockSettings } from '../../core/clock'
 import { normalizeLook, type LookSettings } from '../../core/look'
+import { developGrayscale, tileProgress, type RevealInput } from '../../core/reveal'
 import { changesPhotoOn, normalizePhotoChange, type PhotoChangeSettings } from '../../core/photos'
 import type { TimerEvent, TimerSettings } from '../../core/timer'
 import { Icon } from '../../ui/Icon'
@@ -92,6 +93,22 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   }, [message])
 
   const current = library.current
+
+  // Photo reveal: puzzle pieces or develop, driven by the timer (or the hour in Clock mode).
+  const nowDate = new Date(timer.now)
+  const revealInput: RevealInput = {
+    clock: clock.mode === 'clock',
+    hourFrac: (nowDate.getMinutes() * 60 + nowDate.getSeconds() + nowDate.getMilliseconds() / 1000) / 3600,
+    phase: view.phase,
+    frac: view.progress,
+    totalMinutes: view.totalMs / 60_000,
+    focusMinutes: timer.settings.focusMinutes,
+  }
+  const tiles =
+    look.reveal === 'tiles' && look.showPhoto
+      ? { ...tileProgress(revealInput), order: look.revealOrder, cover: look.revealCover }
+      : null
+  const grayscale = look.reveal === 'develop' ? developGrayscale(revealInput) : 0
   const showWelcome = library.loaded && library.usingSamples && !welcomeDone
 
   const act = (fn: () => void) => (e: React.MouseEvent) => {
@@ -109,7 +126,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
         poke()
       }}
     >
-      <PhotoLayer photo={current} look={look} captionTop={captionAtTop(clock.position)} />
+      <PhotoLayer photo={current} look={look} captionTop={captionAtTop(clock.position)} tiles={tiles} grayscale={grayscale} />
 
       <ClockOverlay settings={clock} timer={view} now={timer.now} night={look.night} demo={timer.settings.speed > 1} />
 
