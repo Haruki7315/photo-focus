@@ -58,7 +58,10 @@ export class AudioEngine {
 
   constructor() {
     this.music.preload = 'auto'
-    this.music.addEventListener('ended', () => this.onTrackEnd?.())
+    // Only move on if music is still wanted (not if it ended while fading out).
+    this.music.addEventListener('ended', () => {
+      if (this.wantMusic) this.onTrackEnd?.()
+    })
     // iOS pauses audio in the background; resume when we're visible again.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.ctx && this.ctx.state !== 'running') void this.ctx.resume().catch(() => {})
@@ -222,6 +225,12 @@ export class AudioEngine {
     this.pauseTimer = window.setTimeout(() => {
       if (!this.wantMusic) this.music.pause()
     }, 1100)
+  }
+
+  /** Play the loaded track again from the beginning (used when there's only one track). */
+  restartMusic(volume: number) {
+    this.music.currentTime = 0
+    void this.playMusic(volume)
   }
 
   isMusicPlaying(): boolean {

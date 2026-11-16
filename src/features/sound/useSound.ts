@@ -77,12 +77,16 @@ export function useSound(settings: SoundSettings, timer: { mode: ClockMode; runn
     setCurrent((i) => nextTrackIndex(i, tracks.length, settingsRef.current.shuffle))
   }, [tracks.length])
 
+  // When a track ends, go to the next one. With a single track, play it again.
   useEffect(() => {
-    audioEngine.onTrackEnd = next
+    audioEngine.onTrackEnd = () => {
+      if (tracks.length === 1) audioEngine.restartMusic(settingsRef.current.musicVolume)
+      else next()
+    }
     return () => {
       audioEngine.onTrackEnd = null
     }
-  }, [next])
+  }, [next, tracks.length])
 
   /** Ring the end sound when a session or break finishes. */
   const onTimerEvent = useCallback((e: TimerEvent) => {
