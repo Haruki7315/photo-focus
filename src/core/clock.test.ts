@@ -116,3 +116,20 @@ describe('clock settings', () => {
     expect(s.seconds).toBe(false)
   })
 })
+
+describe('location for sky faces', () => {
+  it('uses a city, or your saved location with the device time zone', async () => {
+    const { skyLocationFor, roundLocation } = await import('./clock')
+    expect(skyLocationFor({ city: 'tokyo', here: null }, 'America/Chicago')).toMatchObject({ lat: 35.68, tz: 'Asia/Tokyo' })
+    expect(skyLocationFor({ city: 'here', here: { lat: 40.1, lon: -88.2 } }, 'America/Chicago')).toEqual({
+      lat: 40.1, lon: -88.2, tz: 'America/Chicago', name: 'My location',
+    })
+    expect(roundLocation(40.112345, -88.207654)).toEqual({ lat: 40.11, lon: -88.21 })
+  })
+
+  it('falls back to a city when no location was saved', () => {
+    expect(normalizeClock({ city: 'here', here: null }).city).toBe('uiuc')
+    expect(normalizeClock({ city: 'here', here: { lat: 1, lon: 2 } }).city).toBe('here')
+    expect(normalizeClock({ city: 'mars' as never }).city).toBe('uiuc')
+  })
+})

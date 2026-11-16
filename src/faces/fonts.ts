@@ -9,6 +9,7 @@ import '@fontsource/bebas-neue/latin-400.css'
 import '@fontsource/quicksand/latin-400.css'
 import '@fontsource/jetbrains-mono/latin-300.css'
 import '@fontsource/silkscreen/latin-400.css'
+import '@fontsource/special-elite/latin-400.css' // Typewriter face
 
 /** [CSS font-family, weight, letter-spacing], same as the prototype. */
 export const FONT_STYLES: Record<FontId, [string, number, string]> = {

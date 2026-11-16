@@ -16,8 +16,8 @@
 .p-r { right: max(5cqw, calc(env(safe-area-inset-right) + 8px)); align-items: flex-end; text-align: right; }
 
 .bd-glass { background: var(--glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); padding: .16em .3em .2em; border-radius: .16em; }
-.bd-shadow .t-main, .bd-shadow .t-sub, .bd-shadow .fsep { text-shadow: 0 .02em .16em var(--shadowc); }
-.bd-shadow .flip, .bd-shadow .t-bar { filter: drop-shadow(0 .02em .1em var(--shadowc)); }
+.bd-shadow .t-main, .bd-shadow .t-sub, .bd-shadow .t-small, .bd-shadow .t-info, .bd-shadow .fsep, .bd-shadow .tw { text-shadow: 0 .02em .16em var(--shadowc); }
+.bd-shadow .face svg, .bd-shadow .flip, .bd-shadow .stars, .bd-shadow .t-bar { filter: drop-shadow(0 .02em .1em var(--shadowc)); }
 
 .overlay .t-sub { font-family: var(--font-label); font-size: max(9px, .15em); letter-spacing: .14em; text-transform: uppercase; opacity: .85; white-space: nowrap; }
 .overlay .t-bar { width: 100%; min-width: 3.5em; height: max(2px, .035em); background: color-mix(in srgb, currentColor 25%, transparent); border-radius: 2px; overflow: hidden; margin-top: .06em; }

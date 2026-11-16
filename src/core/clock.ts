@@ -3,11 +3,15 @@
  * burn-in shift. Pure TypeScript, no DOM.
  */
 import { luminance, isHexColor } from './look'
-import type { TimerView } from './timer'
+import { CITIES, type CityId } from './sky'
+import type { Phase, TimerView } from './timer'
 
 export type ClockMode = 'focus' | 'clock'
-/** Faces available so far (more arrive in milestone 5). */
-export type FaceId = 'digital' | 'flip'
+export type FaceId =
+  | 'digital' | 'flip' | 'typewriter' | 'dots'
+  | 'ring' | 'dial' | 'hourglass' | 'aperture'
+  | 'golden' | 'sun' | 'moon' | 'stars'
+export type FaceGroup = 'Numbers' | 'Dials' | 'Sky'
 export type FontId = 'clean' | 'serif' | 'classic' | 'poster' | 'rounded' | 'mono' | 'pixel'
 export type Backdrop = 'none' | 'shadow' | 'glass'
 /** Row (t/m/b) + column (l/c/r), e.g. "br" = bottom right. */
@@ -32,6 +36,10 @@ export interface ClockSettings {
   progressBar: boolean
   /** "Working on" text shown as the focus label. */
   task: string
+  /** Place for Golden hour and Sun arc: a city, or 'here' (your saved location). */
+  city: CityId | 'here'
+  /** Your location, saved only after you tap "Use my location" (rounded to about 1 km). */
+  here: { lat: number; lon: number } | null
 }
 
 export const DEFAULT_CLOCK: ClockSettings = {
@@ -48,12 +56,29 @@ export const DEFAULT_CLOCK: ClockSettings = {
   label: true,
   progressBar: true,
   task: '',
+  city: 'uiuc',
+  here: null,
 }
 
-export const FACES: ReadonlyArray<{ id: FaceId; name: string; note: string }> = [
-  { id: 'digital', name: 'Digital', note: 'Plain numbers.' },
-  { id: 'flip', name: 'Flip', note: 'Cards flip as the digits change. Turn on Seconds to flip every second.' },
+export const FACES: ReadonlyArray<{ id: FaceId; name: string; group: FaceGroup; note: string }> = [
+  { id: 'digital', name: 'Digital', group: 'Numbers', note: 'Plain numbers.' },
+  { id: 'flip', name: 'Flip', group: 'Numbers', note: 'Cards flip as the digits change. Turn on Seconds to flip every second.' },
+  { id: 'typewriter', name: 'Typewriter', group: 'Numbers', note: 'Types a short sentence each minute, like an old typewriter.' },
+  { id: 'dots', name: 'Dots', group: 'Numbers', note: 'One dot per minute. The current dot fills like a pie as the minute passes. Clock mode shows 60 dots for the hour.' },
+  { id: 'ring', name: 'Ring', group: 'Dials', note: 'The ring fills as the session runs. Clock mode: once per minute.' },
+  { id: 'dial', name: 'Analog', group: 'Dials', note: 'Clock mode: real clock hands. Focus mode: a red wedge shrinks as time runs out.' },
+  { id: 'hourglass', name: 'Hourglass', group: 'Dials', note: 'Sand drains over the session. Clock mode: once per minute.' },
+  { id: 'aperture', name: 'Aperture', group: 'Dials', note: 'Focus: the iris closes from f/1.4 to f/22 over the session. Clock: it closes and opens once a minute.' },
+  { id: 'golden', name: 'Golden hr', group: 'Sky', note: "Shows when the next golden hour starts at the location you pick, in that place's local time." },
+  { id: 'sun', name: 'Sun arc', group: 'Sky', note: 'Clock: where the real sun is today between sunrise and sunset. Focus: the sun rises and sets over one session.' },
+  { id: 'moon', name: 'Moon', group: 'Sky', note: "Clock: tonight's real moon phase. Focus: the moon grows from new to full as you focus." },
+  { id: 'stars', name: 'Star trail', group: 'Sky', note: 'Star trails get longer like a long exposure. Clock mode: one exposure per hour.' },
 ]
+
+/** Faces that use the location setting. */
+export function faceUsesLocation(face: FaceId): boolean {
+  return face === 'golden' || face === 'sun'
+}
 
 export const FONTS: ReadonlyArray<{ id: FontId; name: string }> = [
   { id: 'clean', name: 'Clean (thin sans)' },
@@ -98,6 +123,18 @@ export interface ClockDisplay {
   frac: number
   /** Whether the progress bar makes sense right now. */
   showBar: boolean
+  /** Local time parts (used by Analog, Dots, Typewriter...). */
+  hour: number
+  minute: number
+  second: number
+  /** 0 to 1 through the current hour. */
+  hourFrac: number
+  /** Focus mode: session length and time left. */
+  totalMinutes: number
+  remainingMs: number
+  phase: Phase
+  /** True while time is passing (always in Clock mode). */
+  moving: boolean
 }
 
 /** Focus mode text: "24:59" (with seconds) or minutes left, "25" or "1:30". */
@@ -123,6 +160,15 @@ export function clockText(date: Date, h24: boolean, seconds: boolean): string {
 const PHASE_LABEL = { focus: 'Focus', break: 'Break', longBreak: 'Long break' } as const
 
 export function getClockDisplay(settings: ClockSettings, timer: TimerView, now: Date, locale?: string): ClockDisplay {
+  const parts = {
+    hour: now.getHours(),
+    minute: now.getMinutes(),
+    second: now.getSeconds(),
+    hourFrac: (now.getMinutes() * 60 + now.getSeconds()) / 3600,
+    totalMinutes: timer.totalMs / 60_000,
+    remainingMs: timer.remainingMs,
+    phase: timer.phase,
+  }
   if (settings.mode === 'clock') {
     const H = now.getHours()
     const date = now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })
@@ -132,12 +178,14 @@ export function getClockDisplay(settings: ClockSettings, timer: TimerView, now: 
       sub: date + (settings.h24 ? '' : ` · ${H < 12 ? 'AM' : 'PM'}`),
       frac: (now.getSeconds() + now.getMilliseconds() / 1000) / 60,
       showBar: false,
+      ...parts,
+      moving: true,
     }
   }
   const task = settings.task.trim()
   const label = timer.phase === 'focus' ? task || 'Focus' : PHASE_LABEL[timer.phase]
   const sub = label + (settings.seconds ? '' : ' · min left') + (timer.completedSessions ? ` · ${timer.completedSessions} done` : '')
-  return { clock: false, text: timerText(timer.remainingMs, settings.seconds), sub, frac: timer.progress, showBar: true }
+  return { clock: false, text: timerText(timer.remainingMs, settings.seconds), sub, frac: timer.progress, showBar: true, ...parts, moving: timer.running }
 }
 
 /** Colors derived from the clock color (ported from the prototype). */
@@ -147,6 +195,9 @@ export interface ClockColors {
   glass: string
   cardBg: string
   cardFg: string
+  /** Analog dial background and Golden hour text. */
+  dialBg: string
+  gold: string
 }
 
 export function clockColors(color: string, night: boolean): ClockColors {
@@ -160,6 +211,8 @@ export function clockColors(color: string, night: boolean): ClockColors {
     glass: dark ? 'rgba(255,255,255,.5)' : 'rgba(10,12,16,.32)',
     cardBg: dark ? '#f2f1ee' : 'rgba(16,17,20,.9)',
     cardFg: dark ? '#16181c' : c,
+    dialBg: dark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.28)',
+    gold: dark ? '#9c5a17' : '#ffc56e',
   }
 }
 
@@ -197,6 +250,24 @@ function clampInt(value: unknown, min: number, max: number, fallback: number): n
   return Number.isFinite(n) ? Math.min(max, Math.max(min, Math.round(n))) : fallback
 }
 
+function validHere(h: unknown): h is { lat: number; lon: number } {
+  if (!h || typeof h !== 'object') return false
+  const { lat, lon } = h as { lat: unknown; lon: unknown }
+  return typeof lat === 'number' && typeof lon === 'number' && Math.abs(lat) <= 90 && Math.abs(lon) <= 180
+}
+
+/** Round a location to 2 decimals (about 1 km): enough for sun times, less precise for privacy. */
+export function roundLocation(lat: number, lon: number): { lat: number; lon: number } {
+  return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 }
+}
+
+/** Where the sky faces should look, given the settings and this device's time zone. */
+export function skyLocationFor(settings: Pick<ClockSettings, 'city' | 'here'>, deviceTz: string): { lat: number; lon: number; tz: string; name: string } {
+  if (settings.city === 'here' && settings.here) return { ...settings.here, tz: deviceTz, name: 'My location' }
+  const c = CITIES.find((x) => x.id === settings.city) ?? CITIES[0]
+  return { lat: c.lat, lon: c.lon, tz: c.tz, name: c.name }
+}
+
 /** Fill in missing or broken values from saved settings. */
 export function normalizeClock(saved: Partial<ClockSettings> | null | undefined): ClockSettings {
   const s = { ...DEFAULT_CLOCK, ...(saved ?? {}) }
@@ -214,5 +285,7 @@ export function normalizeClock(saved: Partial<ClockSettings> | null | undefined)
     label: s.label !== false,
     progressBar: s.progressBar !== false,
     task: String(s.task ?? '').slice(0, TASK_MAX_LENGTH),
+    city: s.city === 'here' && validHere(s.here) ? 'here' : oneOf(s.city, CITIES, DEFAULT_CLOCK.city as CityId),
+    here: validHere(s.here) ? { lat: s.here.lat, lon: s.here.lon } : null,
   }
 }

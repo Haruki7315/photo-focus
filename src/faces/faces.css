@@ -21,3 +21,72 @@
 @media (prefers-reduced-motion: reduce) {
   .fc-flap-t, .fc-flap-b { animation: none; }
 }
+
+/* Shared small text under graphic faces */
+.face .t-small { font-family: var(--cf); font-weight: var(--cw); letter-spacing: var(--cls); font-size: .3em; line-height: 1.1; font-variant-numeric: tabular-nums; margin-top: .25em; white-space: nowrap; }
+.t-info { font-family: var(--font-label); font-size: max(9px, .13em); letter-spacing: .05em; opacity: .9; white-space: nowrap; margin-top: .3em; font-variant-numeric: tabular-nums; }
+.t-info.gold { font-family: var(--font-ui); font-size: .22em; letter-spacing: 0; color: var(--goldc); opacity: 1; display: flex; align-items: center; gap: .35em; }
+.t-info.gold svg { width: 1.2em; height: 1.2em; flex: none; }
+
+/* Typewriter */
+.face .tw { font-family: "Special Elite", "Courier New", monospace; font-size: .4em; line-height: 1.15; white-space: nowrap; font-weight: 400; }
+.tw .caret { display: inline-block; width: .5em; border-bottom: .07em solid currentColor; margin-left: .05em; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Dots */
+.dots svg { display: block; }
+.dot { stroke: currentColor; stroke-width: .9; }
+.dot.done { fill: currentColor; }
+.dot.now { fill: none; }
+.dot.todo { fill: none; opacity: .35; }
+.dot-pie { fill: currentColor; }
+
+/* Ring */
+.ring { position: relative; width: 2.3em; height: 2.3em; }
+.ring svg, .dial svg, .apt svg, .sunarc svg, .moon svg { width: 100%; height: 100%; display: block; }
+.ring-track { fill: none; stroke: currentColor; opacity: .22; stroke-width: 3.5; }
+.ring-arc { fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+.ring .t-main { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .48em; }
+
+/* Analog */
+.dial { width: 2.4em; height: 2.4em; }
+.dial-face { fill: var(--dialbg); }
+.dial-ticks line, .dial-hands line { stroke: currentColor; stroke-linecap: round; }
+.dial-hands .sec { stroke: #e8664f; }
+.dial-wedge { fill: #e8664f; opacity: .92; }
+
+/* Hourglass */
+.hg svg { width: 1.45em; height: 2.4em; display: block; }
+.sand { fill: #e6bf7f; }
+.stream { stroke: #e6bf7f; stroke-width: 1.4; transition: opacity .3s; }
+.hg-glass { fill: color-mix(in srgb, currentColor 8%, transparent); stroke: currentColor; stroke-width: 1.6; }
+.hg-cap { fill: currentColor; }
+
+/* Aperture */
+.apt { width: 2.4em; height: 2.4em; }
+.apt-house { fill: rgba(14,15,18,.88); }
+.apt-blade line { stroke: rgba(255,255,255,.3); stroke-width: .8; }
+.apt-edge { fill: none; stroke: rgba(255,255,255,.45); stroke-width: .8; }
+.apt-ring { fill: none; stroke: currentColor; stroke-width: 2.6; }
+.apt-mark { fill: currentColor; }
+
+/* Sun arc */
+.sunarc { width: 3.3em; height: 1.78em; }
+.sa-path { fill: none; stroke: currentColor; stroke-width: 1; stroke-dasharray: 2 3.5; opacity: .5; }
+.sa-done { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; opacity: .9; }
+.sa-horizon { stroke: currentColor; stroke-width: 1.4; opacity: .75; }
+.sa-tick { fill: currentColor; opacity: .75; }
+
+/* Moon */
+.moon { width: 2.2em; height: 2.2em; }
+.moon-dark { fill: color-mix(in srgb, currentColor 13%, transparent); stroke: currentColor; stroke-opacity: .35; stroke-width: 1; }
+.moon-lit { fill: currentColor; }
+
+/* Star trail */
+.stars { width: 2.6em; height: 2.6em; border-radius: 50%; overflow: hidden; }
+.stars canvas { width: 100%; height: 100%; display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-arc, .stream { transition: none; }
+  .tw .caret { animation: none; }
+}

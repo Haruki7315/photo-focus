@@ -111,7 +111,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
     >
       <PhotoLayer photo={current} look={look} captionTop={captionAtTop(clock.position)} />
 
-      <ClockOverlay settings={clock} timer={view} now={timer.now} night={look.night} />
+      <ClockOverlay settings={clock} timer={view} now={timer.now} night={look.night} demo={timer.settings.speed > 1} />
 
       {message && !settingsOpen && <div className="toast" aria-live="polite">{message}</div>}
 
