@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from 'react'
 import { Icon } from '../../ui/Icon'
 
-export type SettingsTab = 'photos' | 'look' | 'clock' | 'sound'
+export type SettingsTab = 'photos' | 'look' | 'clock' | 'sound' | 'stats'
 
 const TABS: Array<{ id: SettingsTab; label: string }> = [
   { id: 'photos', label: 'Photos' },
   { id: 'look', label: 'Look' },
   { id: 'clock', label: 'Clock' },
   { id: 'sound', label: 'Sound' },
+  { id: 'stats', label: 'Stats' },
 ]
 
 /** Settings panel: slides in from the right on iPad/Mac, up from the bottom on iPhone. */

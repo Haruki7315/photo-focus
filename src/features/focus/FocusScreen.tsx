@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { captionAtTop, normalizeClock, type ClockSettings } from '../../core/clock'
 import { normalizeLook, type LookSettings } from '../../core/look'
 import { developGrayscale, tileProgress, type RevealInput } from '../../core/reveal'
-import { changesPhotoOn, normalizePhotoChange, type PhotoChangeSettings } from '../../core/photos'
+import { changesPhotoOn, normalizePhotoChange, type PhotoChangeSettings, type PhotoMeta } from '../../core/photos'
 import type { TimerEvent, TimerSettings } from '../../core/timer'
 import { Icon } from '../../ui/Icon'
 import { AddPhotosButton, describeImport } from '../photos/AddPhotosButton'
@@ -18,6 +18,8 @@ import { useTimer } from '../timer/useTimer'
 import { normalizeSound, type SoundSettings } from '../../core/sound'
 import { SoundPanel } from '../settings/SoundPanel'
 import { useSound } from '../sound/useSound'
+import { StatsPanel } from '../settings/StatsPanel'
+import { useStats } from '../stats/useStats'
 
 const CONTROLS_HIDE_MS = 4000
 
@@ -41,15 +43,28 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   const { next } = library
   // Sound reacts to timer events too, but is set up after the timer, so we reach it through a ref.
   const soundEventRef = useRef<((e: TimerEvent) => void) | null>(null)
+  const stats = useStats()
+  // Latest photo/task/speed for saving a session, read when the timer event arrives.
+  const sessionInfoRef = useRef<{ photo: PhotoMeta | null; task: string; demo: boolean }>({ photo: null, task: '', demo: false })
+  const { record } = stats
   const onTimerEvent = useCallback(
     (e: TimerEvent) => {
+      // Save the finished session first, while the photo you looked at is still the current one.
+      if (e.type === 'focusCompleted') {
+        const info = sessionInfoRef.current
+        void record({ endedAt: e.at, minutes: e.minutes, task: info.task, photo: info.photo, demo: info.demo })
+      }
       if (changesPhotoOn(photoChangeRef.current.mode, e)) next()
       soundEventRef.current?.(e)
     },
-    [next],
+    [next, record],
   )
   const timer = useTimer(initial.timer, onTimerEvent)
   const { view } = timer
+  const currentPhoto = library.current
+  useEffect(() => {
+    sessionInfoRef.current = { photo: currentPhoto, task: clock.task, demo: timer.settings.speed > 1 }
+  }, [currentPhoto, clock.task, timer.settings.speed])
   const sound = useSound(soundSettings, { mode: clock.mode, running: view.running, phase: view.phase })
   useEffect(() => {
     soundEventRef.current = sound.onTimerEvent
@@ -219,6 +234,8 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
           render={(tab) =>
             tab === 'photos' ? (
               <PhotosPanel library={library} photoChange={photoChange} onPhotoChange={setPhotoChange} onMessage={setMessage} />
+            ) : tab === 'stats' ? (
+              <StatsPanel stats={stats} onMessage={setMessage} />
             ) : tab === 'sound' ? (
               <SoundPanel settings={soundSettings} onChange={setSound} sound={sound} onMessage={setMessage} />
             ) : tab === 'look' ? (

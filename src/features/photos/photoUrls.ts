@@ -22,9 +22,12 @@ export function registerInMemoryFiles(id: string, files: PhotoFiles) {
   inMemory.set(id, files)
 }
 
-async function files(id: string) {
+/** The stored image files for a photo (samples included). */
+export async function getPhotoFiles(id: string): Promise<PhotoFiles | undefined> {
   return inMemory.get(id) ?? (await loader(id))
 }
+
+const files = getPhotoFiles
 
 export async function getThumbUrl(id: string): Promise<string | null> {
   const hit = thumbs.get(id)

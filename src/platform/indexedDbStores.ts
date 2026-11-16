@@ -1,6 +1,6 @@
 import type { PhotoMeta } from '../core/photos'
 import { getDB } from './db'
-import type { PhotoFiles, PhotoStore, SettingsStore, TrackStore } from './types'
+import type { PhotoFiles, PhotoStore, SessionStore, SettingsStore, TrackStore } from './types'
 
 export const photoStore: PhotoStore = {
   async list() {
@@ -52,5 +52,27 @@ export const trackStore: TrackStore = {
     const db = await getDB()
     const tx = db.transaction(['tracks', 'trackFiles'], 'readwrite')
     await Promise.all([tx.objectStore('tracks').delete(id), tx.objectStore('trackFiles').delete(id), tx.done])
+  },
+}
+
+export const sessionStore: SessionStore = {
+  async list() {
+    const all = await (await getDB()).getAll('sessions')
+    return all.sort((a, b) => a.endedAt - b.endedAt)
+  },
+  async getThumb(id) {
+    return (await getDB()).get('sessionThumbs', id)
+  },
+  async add(record, thumb) {
+    const db = await getDB()
+    const tx = db.transaction(['sessions', 'sessionThumbs'], 'readwrite')
+    const writes: Promise<unknown>[] = [tx.objectStore('sessions').put(record)]
+    if (thumb) writes.push(tx.objectStore('sessionThumbs').put(thumb, record.id))
+    await Promise.all([...writes, tx.done])
+  },
+  async clear() {
+    const db = await getDB()
+    const tx = db.transaction(['sessions', 'sessionThumbs'], 'readwrite')
+    await Promise.all([tx.objectStore('sessions').clear(), tx.objectStore('sessionThumbs').clear(), tx.done])
   },
 }

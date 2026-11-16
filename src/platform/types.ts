@@ -1,5 +1,6 @@
 import type { PhotoMeta } from '../core/photos'
 import type { TrackMeta } from '../core/sound'
+import type { SessionRecord } from '../core/stats'
 
 /** The image files we keep for each photo. Originals are never stored or changed. */
 export interface PhotoFiles {
@@ -37,4 +38,12 @@ export interface TrackStore {
   getFile(id: string): Promise<Blob | undefined>
   add(meta: TrackMeta, file: Blob): Promise<void>
   remove(id: string): Promise<void>
+}
+
+/** Completed focus sessions, each with a small copy of its photo. */
+export interface SessionStore {
+  list(): Promise<SessionRecord[]>
+  getThumb(id: string): Promise<Blob | undefined>
+  add(record: SessionRecord, thumb: Blob | null): Promise<void>
+  clear(): Promise<void>
 }
