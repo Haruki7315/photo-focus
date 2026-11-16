@@ -8,6 +8,8 @@ const PATHS = {
   hide: 'M3 3l18 18M10.6 6.1A10 10 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.6 3.2M6.3 7.6C4.2 9.2 3 12 3 12s4 6 9 6a8.8 8.8 0 0 0 4.2-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2',
   settings: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
   close: 'M6 6l12 12M18 6L6 18',
+  fullscreen: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+  exitFullscreen: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
 } as const
 
 export type IconName = keyof typeof PATHS

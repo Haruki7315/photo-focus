@@ -1,4 +1,6 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { installUpdate, onUpdateReady } from '../../platform/serviceWorker'
+import { isAppleMobile, isStandalone } from '../../platform/fullscreen'
 import { Icon } from '../../ui/Icon'
 
 export type SettingsTab = 'photos' | 'look' | 'clock' | 'sound' | 'stats'
@@ -14,6 +16,9 @@ const TABS: Array<{ id: SettingsTab; label: string }> = [
 /** Settings panel: slides in from the right on iPad/Mac, up from the bottom on iPhone. */
 export function SettingsSheet(props: { onClose: () => void; message: string | null; render: (tab: SettingsTab) => ReactNode }) {
   const [tab, setTab] = useState<SettingsTab>('photos')
+  const [updateReady, setUpdateReady] = useState(false)
+  useEffect(() => onUpdateReady(setUpdateReady), [])
+  const [showInstallTip] = useState(() => isAppleMobile() && !isStandalone())
   return (
     <div className="sheet-backdrop" onClick={props.onClose}>
       <aside className="sheet" role="dialog" aria-label="Settings" onClick={(e) => e.stopPropagation()}>
@@ -30,8 +35,19 @@ export function SettingsSheet(props: { onClose: () => void; message: string | nu
           </button>
         </header>
         {props.message && <p className="sheet-msg" aria-live="polite">{props.message}</p>}
+        {updateReady && (
+          <div className="sheet-msg sheet-update">
+            <span>A new version is ready.</span>
+            <button type="button" className="btn primary" onClick={installUpdate}>
+              Update
+            </button>
+          </div>
+        )}
         <div className="sheet-body">
           {props.render(tab)}
+          {showInstallTip && (
+            <p className="note sheet-version">Tip: tap Share → Add to Home Screen. It then opens full screen and works offline.</p>
+          )}
           <p className="note sheet-version">Photo Focus · version {__APP_VERSION__}</p>
         </div>
       </aside>

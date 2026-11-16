@@ -20,6 +20,9 @@ import { SoundPanel } from '../settings/SoundPanel'
 import { useSound } from '../sound/useSound'
 import { StatsPanel } from '../settings/StatsPanel'
 import { useStats } from '../stats/useStats'
+import { classifySwipe } from '../../core/gesture'
+import { keepScreenOn } from '../../platform/wakeLock'
+import { canGoFullscreen, isFullscreen, onFullscreenChange, toggleFullscreen } from '../../platform/fullscreen'
 
 const CONTROLS_HIDE_MS = 4000
 
@@ -122,6 +125,43 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
 
   const current = library.current
 
+  // Keep the screen awake while the app is open. If the device can't, say so once.
+  const wakeHintShown = useRef(false)
+  useEffect(
+    () =>
+      keepScreenOn((status) => {
+        if ((status === 'unsupported' || status === 'denied') && !wakeHintShown.current) {
+          wakeHintShown.current = true
+          setMessage("This browser can't keep the screen on. To stop it sleeping, set Auto-Lock to Never (Settings → Display & Brightness).")
+        }
+      }),
+    [],
+  )
+
+  // Fullscreen button (desktop browsers only).
+  const [fullscreenOk] = useState(canGoFullscreen)
+  const [fullscreen, setFullscreen] = useState(isFullscreen)
+  useEffect(() => onFullscreenChange(() => setFullscreen(isFullscreen())), [])
+
+  // Swipe left/right for next/previous photo. A swipe shouldn't also count as a tap.
+  const swipeStart = useRef<{ x: number; y: number; t: number } | null>(null)
+  const swipedAt = useRef(0)
+  const { previous } = library
+  const blocked = (el: EventTarget) => el instanceof Element && el.closest('.sheet, .controls, .welcome') != null
+  const onPointerDown = (e: React.PointerEvent) => {
+    swipeStart.current = blocked(e.target) || settingsOpen ? null : { x: e.clientX, y: e.clientY, t: e.timeStamp }
+  }
+  const onPointerUp = (e: React.PointerEvent) => {
+    const s = swipeStart.current
+    swipeStart.current = null
+    if (!s) return
+    const dir = classifySwipe(e.clientX - s.x, e.clientY - s.y, e.timeStamp - s.t)
+    if (!dir) return
+    swipedAt.current = performance.now()
+    if (dir === 'left') next()
+    else previous()
+  }
+
   // Photo reveal: puzzle pieces or develop, driven by the timer (or the hour in Clock mode).
   const nowDate = new Date(timer.now)
   const revealInput: RevealInput = {
@@ -139,6 +179,28 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   const grayscale = look.reveal === 'develop' ? developGrayscale(revealInput) : 0
   const showWelcome = library.loaded && library.usingSamples && !welcomeDone
 
+  // Keyboard on Mac: ← → photos, space start/pause, F fullscreen.
+  const keyRef = useRef<(e: KeyboardEvent) => void>(() => {})
+  useEffect(() => {
+    keyRef.current = (e) => {
+      if (settingsOpen || showWelcome || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, button')) return
+      if (e.key === 'ArrowRight') next()
+      else if (e.key === 'ArrowLeft') previous()
+      else if (e.key === ' ' && clock.mode === 'focus') {
+        sound.unlock()
+        timer.toggle()
+      } else if ((e.key === 'f' || e.key === 'F') && fullscreenOk) toggleFullscreen()
+      else return
+      e.preventDefault()
+    }
+  })
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keyRef.current(e)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const act = (fn: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation()
     fn()
@@ -148,8 +210,11 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   return (
     <div
       className="focus"
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={() => (swipeStart.current = null)}
       onClick={() => {
-        if (showWelcome) return
+        if (showWelcome || performance.now() - swipedAt.current < 500) return
         setControls((c) => !c)
         poke()
       }}
@@ -202,6 +267,12 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
           <Icon name="hide" />
           <span>Hide</span>
         </button>
+        {fullscreenOk && (
+          <button type="button" className="ctl" onClick={act(toggleFullscreen)} aria-label={fullscreen ? 'Exit full screen' : 'Full screen'}>
+            <Icon name={fullscreen ? 'exitFullscreen' : 'fullscreen'} />
+            <span>{fullscreen ? 'Exit' : 'Full screen'}</span>
+          </button>
+        )}
         <button type="button" className="ctl" onClick={act(() => setSettingsOpen(true))} aria-label="Settings">
           <Icon name="settings" />
           <span>Settings</span>
