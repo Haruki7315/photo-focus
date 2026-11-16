@@ -1,4 +1,5 @@
 import type { PhotoMeta } from '../core/photos'
+import type { TrackMeta } from '../core/sound'
 
 /** The image files we keep for each photo. Originals are never stored or changed. */
 export interface PhotoFiles {
@@ -28,4 +29,12 @@ export interface StorageInfo {
   usedBytes: number | null
   quotaBytes: number | null
   persisted: boolean | null
+}
+
+/** Music files the user added (stored on the device only). */
+export interface TrackStore {
+  list(): Promise<TrackMeta[]>
+  getFile(id: string): Promise<Blob | undefined>
+  add(meta: TrackMeta, file: Blob): Promise<void>
+  remove(id: string): Promise<void>
 }

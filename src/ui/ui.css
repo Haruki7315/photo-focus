@@ -43,3 +43,10 @@ select, input[type="text"] { font: inherit; font-size: 14px; padding: 7px 10px; 
 input[type="text"] { width: 100%; }
 .facegroup { display: flex; flex-direction: column; gap: 4px; }
 .fglabel { margin: 4px 0 0; font-size: 11.5px; color: var(--muted); }
+
+.tracks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.tracks li { display: flex; gap: 4px; }
+.track { flex: 1; min-width: 0; text-align: left; font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+.track-x { width: 38px; flex: none; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); font-size: 18px; cursor: pointer; }
+.note.warn { color: #ffb38a; }

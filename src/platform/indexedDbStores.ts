@@ -1,6 +1,6 @@
 import type { PhotoMeta } from '../core/photos'
 import { getDB } from './db'
-import type { PhotoFiles, PhotoStore, SettingsStore } from './types'
+import type { PhotoFiles, PhotoStore, SettingsStore, TrackStore } from './types'
 
 export const photoStore: PhotoStore = {
   async list() {
@@ -32,5 +32,25 @@ export const settingsStore: SettingsStore = {
   },
   async set<T>(key: string, value: T) {
     await (await getDB()).put('settings', value, key)
+  },
+}
+
+export const trackStore: TrackStore = {
+  async list() {
+    const all = await (await getDB()).getAll('tracks')
+    return all.sort((a, b) => a.addedAt - b.addedAt)
+  },
+  async getFile(id) {
+    return (await getDB()).get('trackFiles', id)
+  },
+  async add(meta, file) {
+    const db = await getDB()
+    const tx = db.transaction(['tracks', 'trackFiles'], 'readwrite')
+    await Promise.all([tx.objectStore('tracks').put(meta), tx.objectStore('trackFiles').put(file, meta.id), tx.done])
+  },
+  async remove(id) {
+    const db = await getDB()
+    const tx = db.transaction(['tracks', 'trackFiles'], 'readwrite')
+    await Promise.all([tx.objectStore('tracks').delete(id), tx.objectStore('trackFiles').delete(id), tx.done])
   },
 }

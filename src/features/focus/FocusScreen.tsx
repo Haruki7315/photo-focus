@@ -15,6 +15,9 @@ import { SettingsSheet } from '../settings/SettingsSheet'
 import { ClockOverlay } from '../clock/ClockOverlay'
 import { ClockPanel } from '../settings/ClockPanel'
 import { useTimer } from '../timer/useTimer'
+import { normalizeSound, type SoundSettings } from '../../core/sound'
+import { SoundPanel } from '../settings/SoundPanel'
+import { useSound } from '../sound/useSound'
 
 const CONTROLS_HIDE_MS = 4000
 
@@ -23,6 +26,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   const library = usePhotoLibrary()
   const [look, setLookState] = useState<LookSettings>(initial.look)
   const [clock, setClockState] = useState<ClockSettings>(initial.clock)
+  const [soundSettings, setSoundState] = useState<SoundSettings>(initial.sound)
   const [photoChange, setPhotoChangeState] = useState<PhotoChangeSettings>(initial.photoChange)
   const [welcomeDone, setWelcomeDone] = useState(initial.welcomeDone)
   const [controls, setControls] = useState(false)
@@ -35,14 +39,21 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   }, [photoChange])
 
   const { next } = library
+  // Sound reacts to timer events too, but is set up after the timer, so we reach it through a ref.
+  const soundEventRef = useRef<((e: TimerEvent) => void) | null>(null)
   const onTimerEvent = useCallback(
     (e: TimerEvent) => {
       if (changesPhotoOn(photoChangeRef.current.mode, e)) next()
+      soundEventRef.current?.(e)
     },
     [next],
   )
   const timer = useTimer(initial.timer, onTimerEvent)
   const { view } = timer
+  const sound = useSound(soundSettings, { mode: clock.mode, running: view.running, phase: view.phase })
+  useEffect(() => {
+    soundEventRef.current = sound.onTimerEvent
+  }, [sound.onTimerEvent])
 
   // Each change is merged into the latest settings, then saved.
   const setLook = (patch: Partial<LookSettings>) => setLookState((prev) => normalizeLook({ ...prev, ...patch }))
@@ -52,6 +63,8 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   const setClock = (patch: Partial<ClockSettings>) => setClockState((prev) => normalizeClock({ ...prev, ...patch }))
   useEffect(() => saveSetting('look', look), [look])
   useEffect(() => saveSetting('clock', clock), [clock])
+  const setSound = (patch: Partial<SoundSettings>) => setSoundState((prev) => normalizeSound({ ...prev, ...patch }))
+  useEffect(() => saveSetting('sound', soundSettings), [soundSettings])
   useEffect(() => saveSetting('photoChange', photoChange), [photoChange])
   const finishWelcome = () => {
     setWelcomeDone(true)
@@ -135,7 +148,10 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
       <nav className={`controls${controls && !settingsOpen ? ' on' : ''}`} aria-label="Controls" onClick={(e) => e.stopPropagation()}>
         {clock.mode === 'focus' && (
           <>
-        <button type="button" className="ctl primary" onClick={act(timer.toggle)} aria-label={view.running ? 'Pause' : 'Start'}>
+        <button type="button" className="ctl primary" onClick={act(() => {
+            sound.unlock()
+            timer.toggle()
+          })} aria-label={view.running ? 'Pause' : 'Start'}>
           <Icon name={view.running ? 'pause' : 'play'} />
           <span>{view.running ? 'Pause' : 'Start'}</span>
         </button>
@@ -203,6 +219,8 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
           render={(tab) =>
             tab === 'photos' ? (
               <PhotosPanel library={library} photoChange={photoChange} onPhotoChange={setPhotoChange} onMessage={setMessage} />
+            ) : tab === 'sound' ? (
+              <SoundPanel settings={soundSettings} onChange={setSound} sound={sound} onMessage={setMessage} />
             ) : tab === 'look' ? (
               <LookPanel look={look} onChange={setLook} />
             ) : (
