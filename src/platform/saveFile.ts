@@ -3,9 +3,16 @@
  * On iPhone/iPad this opens the share sheet so you can "Save to Files",
  * AirDrop or send it; elsewhere it downloads the file.
  */
-export async function saveTextFile(name: string, text: string, type = 'text/csv'): Promise<'shared' | 'downloaded' | 'cancelled'> {
+export type SaveResult = 'shared' | 'downloaded' | 'cancelled'
+
+export async function saveTextFile(name: string, text: string, type = 'text/csv'): Promise<SaveResult> {
   // Byte-order mark so Excel opens UTF-8 (e.g. Japanese task names) correctly.
-  const file = new File(['﻿' + text], name, { type })
+  return saveFile(new File(['﻿' + text], name, { type }))
+}
+
+/** Same for any file (e.g. an exported album). */
+export async function saveFile(file: File): Promise<SaveResult> {
+  const name = file.name
   const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean }
   // Touch devices (iPhone/iPad) get the share sheet; computers get a normal download.
   const touch = window.matchMedia?.('(pointer: coarse)').matches

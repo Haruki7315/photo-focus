@@ -8,6 +8,7 @@ import { Icon } from '../../ui/Icon'
 import { AddPhotosButton, describeImport } from '../photos/AddPhotosButton'
 import { PhotoLayer } from '../photos/PhotoLayer'
 import { usePhotoLibrary } from '../photos/usePhotoLibrary'
+import { useAlbums } from '../photos/useAlbums'
 import { saveSetting, type AppSettings } from '../settings/appSettings'
 import { LookPanel } from '../settings/LookPanel'
 import { PhotosPanel } from '../settings/PhotosPanel'
@@ -28,7 +29,8 @@ const CONTROLS_HIDE_MS = 4000
 
 /** The main screen: full-screen photo, timer, and a control bar that appears on tap. */
 export function FocusScreen({ initial }: { initial: AppSettings }) {
-  const library = usePhotoLibrary()
+  const albums = useAlbums(initial.albums, initial.activeAlbum)
+  const library = usePhotoLibrary(albums.active)
   const [look, setLookState] = useState<LookSettings>(initial.look)
   const [clock, setClockState] = useState<ClockSettings>(initial.clock)
   const [soundSettings, setSoundState] = useState<SoundSettings>(initial.sound)
@@ -304,7 +306,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
           onClose={() => setSettingsOpen(false)}
           render={(tab) =>
             tab === 'photos' ? (
-              <PhotosPanel library={library} photoChange={photoChange} onPhotoChange={setPhotoChange} onMessage={setMessage} />
+              <PhotosPanel library={library} albums={albums} photoChange={photoChange} onPhotoChange={setPhotoChange} onMessage={setMessage} />
             ) : tab === 'stats' ? (
               <StatsPanel stats={stats} onMessage={setMessage} />
             ) : tab === 'sound' ? (

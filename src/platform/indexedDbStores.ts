@@ -1,6 +1,6 @@
 import type { PhotoMeta } from '../core/photos'
 import { getDB } from './db'
-import type { PhotoFiles, PhotoStore, SessionStore, SettingsStore, TrackStore } from './types'
+import type { AlbumStore, PhotoFiles, PhotoStore, SessionStore, SettingsStore, TrackStore } from './types'
 
 export const photoStore: PhotoStore = {
   async list() {
@@ -74,5 +74,17 @@ export const sessionStore: SessionStore = {
     const db = await getDB()
     const tx = db.transaction(['sessions', 'sessionThumbs'], 'readwrite')
     await Promise.all([tx.objectStore('sessions').clear(), tx.objectStore('sessionThumbs').clear(), tx.done])
+  },
+}
+
+export const albumStore: AlbumStore = {
+  async list() {
+    return (await getDB()).getAll('albums')
+  },
+  async put(album) {
+    await (await getDB()).put('albums', album)
+  },
+  async remove(id) {
+    await (await getDB()).delete('albums', id)
   },
 }

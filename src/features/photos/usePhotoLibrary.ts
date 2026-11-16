@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { photoPool, type Album } from '../../core/albums'
 import { canHide, pickNextPhoto, type PhotoMeta } from '../../core/photos'
+import type { PhotoFiles } from '../../platform/types'
 import { importPhotoFile } from '../../platform/imageImport'
 import { photoStore } from '../../platform/indexedDbStores'
 import { requestPersistentStorage } from '../../platform/storageInfo'
@@ -15,6 +17,8 @@ export interface ImportProgress {
 
 export interface ImportSummary {
   added: number
+  /** Ids of the photos that were added. */
+  ids: string[]
   raw: string[]
   failed: string[]
 }
@@ -22,8 +26,9 @@ export interface ImportSummary {
 /**
  * The photo library: your photos from IndexedDB, or the 3 samples while you
  * have none. Keeps track of the current photo and a short history for "back".
+ * `album`: the active album. New photos are picked only from it (all photos when null).
  */
-export function usePhotoLibrary() {
+export function usePhotoLibrary(album: Album | null = null) {
   const [userPhotos, setUserPhotos] = useState<PhotoMeta[] | null>(null)
   const [samples, setSamples] = useState<PhotoMeta[]>([])
   const [currentId, setCurrentId] = useState<string | null>(null)
@@ -69,6 +74,20 @@ export function usePhotoLibrary() {
   useEffect(() => {
     photosRef.current = photos
   }, [photos])
+  // The photos the timer picks from (the active album, or everything).
+  const pool = useMemo(() => photoPool(photos, usingSamples ? null : album), [photos, album, usingSamples])
+  const poolRef = useRef(pool)
+  useEffect(() => {
+    poolRef.current = pool
+  }, [pool])
+
+  // Switching albums: if the photo on screen isn't in the new album, show one that is.
+  const albumKey = usingSamples ? null : (album?.id ?? null)
+  const [prevAlbumKey, setPrevAlbumKey] = useState(albumKey)
+  if (albumKey !== prevAlbumKey) {
+    setPrevAlbumKey(albumKey)
+    if (!pool.some((p) => p.id === currentId && !p.hidden)) setCurrentId(pickNextPhoto(pool, currentId))
+  }
 
   const current = photos.find((p) => p.id === currentId) ?? null
 
@@ -88,14 +107,14 @@ export function usePhotoLibrary() {
   }, [])
 
   const next = useCallback(() => {
-    const id = pickNextPhoto(photosRef.current, currentRef.current)
+    const id = pickNextPhoto(poolRef.current, currentRef.current)
     remember(currentRef.current, id)
     currentRef.current = id
     setCurrentId(id)
   }, [])
 
   const previous = useCallback(() => {
-    const ids = new Set(photosRef.current.filter((p) => !p.hidden).map((p) => p.id))
+    const ids = new Set(poolRef.current.filter((p) => !p.hidden).map((p) => p.id))
     while (history.current.length) {
       const id = history.current.pop()!
       if (ids.has(id)) {
@@ -132,7 +151,7 @@ export function usePhotoLibrary() {
       if (hidden && !canHide(photosRef.current, id)) return false
       updatePhoto({ ...p, hidden })
       if (hidden) {
-        const rest = photosRef.current.map((x) => (x.id === id ? { ...x, hidden: true } : x))
+        const rest = poolRef.current.map((x) => (x.id === id ? { ...x, hidden: true } : x))
         setCurrentId((cur) => (cur === id ? pickNextPhoto(rest, id) : cur))
       }
       return true
@@ -144,14 +163,14 @@ export function usePhotoLibrary() {
     await photoStore.remove(id)
     releasePhotoUrls(id)
     history.current = history.current.filter((h) => h !== id)
-    const rest = photosRef.current.filter((p) => p.id !== id && !p.sample)
+    const rest = poolRef.current.filter((p) => p.id !== id && !p.sample)
     setUserPhotos((list) => (list ?? []).filter((p) => p.id !== id))
     setCurrentId((cur) => (cur === id ? pickNextPhoto(rest.length ? rest : samples, id) : cur))
   }, [samples])
 
   /** Import picked files one at a time (keeps memory low on iPad/iPhone). */
   const addFiles = useCallback(async (files: File[]): Promise<ImportSummary> => {
-    const summary: ImportSummary = { added: 0, raw: [], failed: [] }
+    const summary: ImportSummary = { added: 0, ids: [], raw: [], failed: [] }
     if (!files.length) return summary
     const firstImport = (userPhotos ?? []).length === 0
     if (firstImport) void requestPersistentStorage()
@@ -163,6 +182,7 @@ export function usePhotoLibrary() {
         try {
           await photoStore.add(result.meta, result.files)
           summary.added++
+          summary.ids.push(result.meta.id)
           firstNewId ??= result.meta.id
           setUserPhotos((list) => [...(list ?? []), result.meta])
         } catch {
@@ -182,9 +202,49 @@ export function usePhotoLibrary() {
     return summary
   }, [userPhotos, show])
 
+  /**
+   * Add photos from an album file. Photos we already have (same id) are kept as they are.
+   * Returns the ids now in the library, and how many were new.
+   */
+  const addPrepared = useCallback(
+    async (items: Array<{ meta: PhotoMeta; files: PhotoFiles }>, onProgress?: (done: number) => void) => {
+      const have = new Set((userPhotos ?? []).map((p) => p.id))
+      const firstImport = have.size === 0
+      if (firstImport && items.length) void requestPersistentStorage()
+      const ids: string[] = []
+      let added = 0
+      for (let i = 0; i < items.length; i++) {
+        const { meta, files } = items[i]
+        if (!have.has(meta.id)) {
+          try {
+            await photoStore.add(meta, files)
+            have.add(meta.id)
+            added++
+            setUserPhotos((list) => [...(list ?? []), meta])
+          } catch {
+            onProgress?.(i + 1)
+            continue
+          }
+        }
+        ids.push(meta.id)
+        onProgress?.(i + 1)
+      }
+      // First photos ever: replace the samples on screen right away.
+      if (firstImport && ids.length) {
+        show(ids[0], false)
+        history.current = []
+      }
+      return { ids, added }
+    },
+    [userPhotos, show],
+  )
+
   return {
     loaded: userPhotos !== null,
     photos,
+    /** The photos the timer picks from (the active album, or all). */
+    pool,
+    addPrepared,
     usingSamples,
     current,
     progress,

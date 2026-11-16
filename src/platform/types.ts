@@ -1,3 +1,4 @@
+import type { Album } from '../core/albums'
 import type { PhotoMeta } from '../core/photos'
 import type { TrackMeta } from '../core/sound'
 import type { SessionRecord } from '../core/stats'
@@ -46,4 +47,11 @@ export interface SessionStore {
   getThumb(id: string): Promise<Blob | undefined>
   add(record: SessionRecord, thumb: Blob | null): Promise<void>
   clear(): Promise<void>
+}
+
+/** Albums (named lists of photo ids). */
+export interface AlbumStore {
+  list(): Promise<Album[]>
+  put(album: Album): Promise<void>
+  remove(id: string): Promise<void>
 }
