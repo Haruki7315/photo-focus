@@ -53,6 +53,8 @@ export type TimerEvent =
   | { type: 'focusCompleted'; at: number; minutes: number }
   | { type: 'breakCompleted'; at: number; phase: 'break' | 'longBreak' }
   | { type: 'skipped'; at: number; from: Phase }
+  /** The device slept through more than one phase, so the timer stopped to wait for you. */
+  | { type: 'pausedAway'; at: number }
 
 export interface TimerUpdate {
   state: TimerState
@@ -146,7 +148,9 @@ function nextPhase(state: TimerState, completed: boolean, carryMs: number, runFr
 /**
  * Call this often (a few times a second) while the timer screen is open.
  * When a phase ends, the next one starts automatically, like the prototype.
- * If the device slept through several phases, they are all caught up.
+ * If the device was asleep when a phase ended, that phase still counts (you were probably still
+ * focusing with the screen off). But if the following phase would have ended too, you were away:
+ * the timer stops at the start of that phase instead of running on (no pile of fake sessions overnight).
  */
 export function tick(state: TimerState, now: number): TimerUpdate {
   const events: TimerEvent[] = []
@@ -165,7 +169,13 @@ export function tick(state: TimerState, now: number): TimerUpdate {
     } else {
       events.push({ type: 'breakCompleted', at: endedAt, phase: current.phase })
     }
-    current = nextPhase(current, true, 0, endedAt)
+    const following = nextPhase(current, true, 0, endedAt)
+    if (elapsed(following, now) >= following.durationMs) {
+      events.push({ type: 'pausedAway', at: now })
+      current = nextPhase(current, true, 0, null)
+      break
+    }
+    current = following
   }
   return { state: current, events }
 }

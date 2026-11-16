@@ -56,6 +56,16 @@ export function PhotosPanel(props: {
         {active && !editing && inActive!.length === 0 && (
           <p className="note">This album is empty, so the timer shows all your photos. Tap Choose photos to add some.</p>
         )}
+        {editing && active && (
+          <div className="inline">
+            <button type="button" className="btn" onClick={() => albums.add(active.id, library.photos.map((p) => p.id))}>
+              Select all
+            </button>
+            <button type="button" className="btn" onClick={() => albums.save({ ...active, photoIds: [] })}>
+              Select none
+            </button>
+          </div>
+        )}
         <div className={`thumbs${editing ? ' choosing' : ''}`}>
           {shown.map((p) => {
             const member = active ? hasPhoto(active, p.id) : false

@@ -9,6 +9,7 @@ import { AddPhotosButton, describeImport } from '../photos/AddPhotosButton'
 import { PhotoLayer } from '../photos/PhotoLayer'
 import { usePhotoLibrary } from '../photos/usePhotoLibrary'
 import { useAlbums } from '../photos/useAlbums'
+import { ImportAlbumButton } from '../photos/ImportAlbumButton'
 import { saveSetting, type AppSettings } from '../settings/appSettings'
 import { LookPanel } from '../settings/LookPanel'
 import { PhotosPanel } from '../settings/PhotosPanel'
@@ -39,6 +40,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
   const [controls, setControls] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [welcomeBusy, setWelcomeBusy] = useState<string | null>(null)
 
   const photoChangeRef = useRef(photoChange)
   useEffect(() => {
@@ -59,6 +61,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
         const info = sessionInfoRef.current
         void record({ endedAt: e.at, minutes: e.minutes, task: info.task, photo: info.photo, demo: info.demo })
       }
+      if (e.type === 'pausedAway') setMessage('Paused while you were away. Your last focus session was saved. Tap Start to go on.')
       if (changesPhotoOn(photoChangeRef.current.mode, e)) next()
       soundEventRef.current?.(e)
     },
@@ -284,7 +287,7 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
       {showWelcome && (
         <div className="welcome" role="dialog" aria-label="Welcome" onClick={(e) => e.stopPropagation()}>
           <h1>Add your photos to start</h1>
-          <p>Pick photos from your library, Files, iCloud Drive or an SSD. They stay on this device.</p>
+          <p>Pick photos from your library, Files, iCloud Drive or an SSD, or import an album you exported on another device. They stay on this device.</p>
           <AddPhotosButton
             library={library}
             className="btn primary big"
@@ -293,6 +296,18 @@ export function FocusScreen({ initial }: { initial: AppSettings }) {
               if (s.added) finishWelcome()
               setMessage(describeImport(s))
             }}
+          />
+          <ImportAlbumButton
+            library={library}
+            albums={albums}
+            busy={welcomeBusy !== null || library.progress !== null}
+            onBusy={setWelcomeBusy}
+            onDone={(text, ok) => {
+              if (ok) finishWelcome()
+              setMessage(text)
+            }}
+            className="btn big"
+            label={welcomeBusy ?? 'Import an album (.pfalbum)'}
           />
           <button type="button" className="linkish" onClick={finishWelcome}>
             Try it with sample photos

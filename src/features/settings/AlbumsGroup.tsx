@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { photosInAlbum } from '../../core/albums'
 import { Group } from '../../ui/Row'
-import { exportAlbum, importAlbum } from '../photos/albumTransfer'
+import { exportAlbum } from '../photos/albumTransfer'
+import { ImportAlbumButton } from '../photos/ImportAlbumButton'
 import type { Albums } from '../photos/useAlbums'
 import type { PhotoLibrary } from '../photos/usePhotoLibrary'
 
@@ -19,7 +20,6 @@ export function AlbumsGroup(props: {
   const [name, setName] = useState('')
   const [armed, setArmed] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
-  const fileInput = useRef<HTMLInputElement>(null)
 
   // "Tap again to delete" turns itself off after a few seconds.
   useEffect(() => {
@@ -118,23 +118,15 @@ export function AlbumsGroup(props: {
               </button>
             </>
           )}
-          <button type="button" className="btn" disabled={busy !== null} onClick={() => fileInput.current?.click()}>
-            Import album
-          </button>
-          {/* No "accept" filter: iPhone/iPad would grey out .pfalbum files it doesn't know. */}
-          <input
-            ref={fileInput}
-            type="file"
-            hidden
-            onChange={async (e) => {
-              const file = e.target.files?.[0]
-              e.target.value = ''
-              if (!file) return
-              props.onEditing(false)
-              setBusy('Opening album…')
-              props.onMessage(await importAlbum(file, library, albums, (done, total) => setBusy(`Importing ${done} of ${total}…`)))
-              setBusy(null)
+          <ImportAlbumButton
+            library={library}
+            albums={albums}
+            busy={busy !== null}
+            onBusy={(text) => {
+              if (text) props.onEditing(false)
+              setBusy(text)
             }}
+            onDone={(message) => props.onMessage(message)}
           />
         </div>
       )}

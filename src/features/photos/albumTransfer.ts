@@ -23,10 +23,11 @@ export async function importAlbum(
   library: PhotoLibrary,
   albums: Albums,
   onProgress: (done: number, total: number) => void,
-): Promise<string> {
+): Promise<{ message: string; ok: boolean }> {
+  const fail = (message: string) => ({ message, ok: false })
   try {
     const read = await readAlbumFile(file)
-    if (!read.photos.length) return `"${read.manifest.album.name}" has no photos in it.`
+    if (!read.photos.length) return fail(`"${read.manifest.album.name}" has no photos in it.`)
     onProgress(0, read.photos.length)
     const { ids, added } = await library.addPrepared(read.photos, (done) => onProgress(done, read.photos.length))
     const { album, isNew } = mergeImportedAlbum(albums.albums, read.manifest, ids)
@@ -34,15 +35,16 @@ export async function importAlbum(
     albums.setActive(album.id)
     const already = ids.length - added
     const failed = read.photos.length - ids.length
-    return [
+    const message = [
       `${isNew ? 'Imported' : 'Updated'} "${album.name}": ${added} new photo${added === 1 ? '' : 's'}`,
       already ? ` (${already} you already had)` : '',
       '.',
       failed ? ` ${failed} couldn't be saved (the device may be out of space).` : '',
       ' Now showing this album.',
     ].join('')
+    return { message, ok: ids.length > 0 }
   } catch (e) {
-    if (e instanceof AlbumFileError) return e.message
-    return `Couldn't import "${file.name}". The device may be out of space.`
+    if (e instanceof AlbumFileError) return fail(e.message)
+    return fail(`Couldn't import "${file.name}". The device may be out of space.`)
   }
 }

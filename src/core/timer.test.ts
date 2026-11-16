@@ -108,14 +108,32 @@ describe('timer: focus to break', () => {
     expect(getView(state, 30 * MIN).remainingMs).toBe(25 * MIN)
   })
 
-  it('catches up through several phases after a long sleep', () => {
+  it('after a long sleep, counts the session that ended, then stops and waits', () => {
     const s = start(createTimer(), 0)
-    // 25 focus + 5 break + 25 focus = 55 min, then 2 min into the second break.
+    // Away for 57 min: focus ended at 25, the break would have ended at 30 too.
     const { state, events } = tick(s, 57 * MIN)
-    expect(events.map((e) => e.type)).toEqual(['focusCompleted', 'breakCompleted', 'focusCompleted'])
+    expect(events).toEqual([
+      { type: 'focusCompleted', at: 25 * MIN, minutes: 25 },
+      { type: 'pausedAway', at: 57 * MIN },
+    ])
     expect(state.phase).toBe('break')
-    expect(state.completedSessions).toBe(2)
-    expect(getView(state, 57 * MIN).remainingMs).toBe(3 * MIN)
+    expect(state.completedSessions).toBe(1)
+    expect(state.runningSince).toBeNull()
+    expect(getView(state, 57 * MIN).remainingMs).toBe(5 * MIN)
+  })
+
+  it('a whole night away still gives just one session', () => {
+    const { events, state } = tick(start(createTimer(), 0), 8 * 60 * MIN)
+    expect(events.filter((e) => e.type === 'focusCompleted')).toHaveLength(1)
+    expect(state.runningSince).toBeNull()
+  })
+
+  it('waking up during the next phase keeps running normally', () => {
+    // Focus ended at 25 min, woke at 27 min: 2 min into the break.
+    const { state, events } = tick(start(createTimer(), 0), 27 * MIN)
+    expect(events.map((e) => e.type)).toEqual(['focusCompleted'])
+    expect(state.runningSince).not.toBeNull()
+    expect(getView(state, 27 * MIN).remainingMs).toBe(3 * MIN)
   })
 })
 
